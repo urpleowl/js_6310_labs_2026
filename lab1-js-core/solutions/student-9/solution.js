@@ -411,7 +411,7 @@ function validatePassword(password) {
  * - +7(999)123-45-67
  */
 function validatePhone(phone) {
-    const phoneRegex = /^(\+7|8)[\s(-]?\d{3}[\s)-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$/;
+    const phoneRegex = /^(\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$/;
     return phoneRegex.test(phone);
 }
 
@@ -432,6 +432,9 @@ function validateDate(date) {
 // ===== ТЕСТИРОВАНИЕ =====
 function runTests() {
     console.log("=== ТЕСТИРОВАНИЕ ===");
+
+    //Тест 0
+    simpleTask()
 
     // Тест 1: getReviewerNumber
     console.assert(getReviewerNumber(5, 1) === 6, "Тест получения ревьюера провален");
@@ -461,7 +464,7 @@ function runTests() {
     console.assert(testVehicle.age === (new Date().getFullYear() - 2010), 'Тест возраста провален');
 
     const createCarFactory = createVehicleFactory(Car);
-    const myNewCar = createCarFactory('BMW', 'X5', 2022); // Теперь numDoors будет равен 4 (по умолчанию), а не undefined
+    const myNewCar = createCarFactory('BMW', 'X5', 2022);
     console.log('Создан новый автомобиль:');
     myNewCar.displayInfo();
 
@@ -501,8 +504,48 @@ function runTests() {
     console.log("Незавершенные задачи:", taskManager.getTasksByStatus(false));
     taskManager.deleteTask(2);
     console.log("После удаления задачи 2:", taskManager.getStats());
+    
+    // Тест 11
+    console.assert(validateEmail('user@example.com') === true, "Email 1 провален");
+    console.assert(validateEmail('test.user+tag@domain.co') === true, "Email 2 провален");
+    console.assert(validateEmail('my-email_123@sub.domain.org') === true, "Email 3 провален");
+    console.assert(validateEmail('invalid') === false, "Email без @ провален");
+    console.assert(validateEmail('user@') === false, "Email без домена провален");
+    console.assert(validateEmail('@domain.com') === false, "Email без имени провален");
+    console.assert(validateEmail('user@domain') === false, "Email без точки в домене провален");
+    console.assert(validateEmail('') === false, "Пустой email провален");
+    
+    console.assert(validatePassword('Pass123!') === true, "Password 1 провален");
+    console.assert(validatePassword('StrongP@ssw0rd') === true, "Password 2 провален");
+    console.assert(validatePassword('My$ecret9') === true, "Password 3 провален");
+    console.assert(validatePassword('weak') === false, "Слишком короткий пароль провален");
+    console.assert(validatePassword('alllowercase1!') === false, "Пароль без заглавной провален");
+    console.assert(validatePassword('ALLUPPERCASE1!') === false, "Пароль без строчной провален");
+    console.assert(validatePassword('NoDigitsHere!') === false, "Пароль без цифры провален");
+    console.assert(validatePassword('NoSpecial123') === false, "Пароль без спецсимвола провален");
+    
+    console.assert(validatePhone('+7 (999) 123-45-67') === true, "Phone 1 провален");
+    console.assert(validatePhone('8 (999) 123-45-67') === true, "Phone 2 провален");
+    console.assert(validatePhone('89991234567') === true, "Phone 3 провален");
+    console.assert(validatePhone('+7(999)123-45-67') === true, "Phone 4 провален");
+    console.assert(validatePhone('12345') === false, "Слишком короткий телефон провален");
+    console.assert(validatePhone('+6 (999) 123-45-67') === false, "Неверный код страны провален");
+    console.assert(validatePhone('abc') === false, "Буквы в телефоне провалены");
+    
+    console.assert(validateDate('05.09.2026') === true, "Date 1 провален");
+    console.assert(validateDate('01.01.1900') === true, "Date 2 провален");
+    console.assert(validateDate('31.12.2099') === true, "Date 3 провален");
+    console.assert(validateDate('15.06.2000') === true, "Date 4 провален");
+    console.assert(validateDate('32.01.2020') === false, "Неверный день провален");
+    console.assert(validateDate('00.05.2020') === false, "День 00 провален");
+    console.assert(validateDate('15.13.2020') === false, "Неверный месяц провален");
+    console.assert(validateDate('15.00.2020') === false, "Месяц 00 провален");
+    console.assert(validateDate('05.09.1899') === false, "Год до 1900 провален");
+    console.assert(validateDate('05.09.2100') === false, "Год после 2099 провален");
+    console.assert(validateDate('2026-09-05') === false, "Неверный формат провален");
 
     console.log("Все тесты пройдены! ✅");
+    
 
 }
 // Запуск тестов
