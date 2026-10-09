@@ -266,11 +266,7 @@ function initAirStylePlugin() {
     });
 
     if (buttonContainer) {
-        if (buttonContainer.children.length > 0) {
-            buttonContainer.appendChild(button);
-        } else {
-            buttonContainer.appendChild(button);
-        }
+        buttonContainer.appendChild(button);
         console.log('[Lab2] Кнопка добавлена в .box_links. ParentElement:', button.parentElement.tagName);
     } else {
         Object.assign(button.style, {
