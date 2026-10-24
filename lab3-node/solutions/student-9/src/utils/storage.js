@@ -1,8 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 
-const DB_FILE = process.env.TEST_DB_FILE
-  || path.join(process.cwd(), 'habits.json');
+// Используем тестовый файл, если задана переменная окружения, иначе обычный
+const DB_FILE = process.env.TEST_DB_FILE || path.join(process.cwd(), 'habits.json');
+
+// Вспомогательная функция для получения локальной даты в формате YYYY-MM-DD
+const getLocalDate = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const loadDB = () => {
   try {
@@ -38,15 +46,16 @@ export const setUserState = (userId, step, data) => {
 };
 
 export const addHabit = (userId, habitName, frequency) => {
-  if (!habitName || typeof habitName !== 'string' || habitName.startsWith('/')) {
-    return false;
-  }
   const db = loadDB();
   if (!db[userId]) db[userId] = {};
-  db[userId][habitName] = {
-    frequency,
-    history: [],
-    createdAt: new Date().toISOString()
+  
+  // Дополнительная защита от перезаписи служебных полей
+  if (habitName === '_state' || habitName === '__proto__') return false;
+
+  db[userId][habitName] = { 
+    frequency, 
+    history: [], 
+    createdAt: new Date().toISOString() 
   };
   saveDB(db);
   return true;
@@ -54,9 +63,10 @@ export const addHabit = (userId, habitName, frequency) => {
 
 export const checkHabit = (userId, habitName) => {
   const db = loadDB();
-  if (!db[userId] || !db[userId][habitName]) return false;
-
-  const today = new Date().toISOString().split('T')[0];
+  // ИСПРАВЛЕНО: безопасная проверка hasOwnProperty для линтера
+  if (!db[userId] || !Object.prototype.hasOwnProperty.call(db[userId], habitName)) return false;
+  
+  const today = getLocalDate();
   if (!db[userId][habitName].history.includes(today)) {
     db[userId][habitName].history.push(today);
     saveDB(db);
@@ -66,18 +76,19 @@ export const checkHabit = (userId, habitName) => {
 
 export const getProgress = (userId, habitName) => {
   const db = loadDB();
-  if (!db[userId] || !db[userId][habitName]) return null;
-
+  // ИСПРАВЛЕНО: безопасная проверка hasOwnProperty для линтера
+  if (!db[userId] || !Object.prototype.hasOwnProperty.call(db[userId], habitName)) return null;
+  
   const history = db[userId][habitName].history.sort();
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDate();
   const isDoneToday = history.includes(today);
-
+  
   let streak = 0;
   const checkDate = new Date();
   if (!isDoneToday) checkDate.setDate(checkDate.getDate() - 1);
-
+  
   while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
+    const dateStr = getLocalDate(checkDate);
     if (history.includes(dateStr)) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -85,13 +96,11 @@ export const getProgress = (userId, habitName) => {
       break;
     }
   }
-
+  
   return { history, isDoneToday, streak, frequency: db[userId][habitName].frequency };
 };
 
 export const getUserHabits = (userId) => {
   const db = loadDB();
-  return db[userId]
-    ? Object.keys(db[userId]).filter(k => k !== '_state' && !k.startsWith('/'))
-    : [];
+  return db[userId] ? Object.keys(db[userId]).filter(k => k !== '_state') : [];
 };

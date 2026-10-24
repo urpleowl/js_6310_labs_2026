@@ -1,4 +1,5 @@
 node_modules/
 coverage/
-habits.json
 .env
+habits.json
+*.test.json
