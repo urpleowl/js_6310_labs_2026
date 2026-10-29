@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { HabitCard, Heatmap } from '@my-app/ui-library'
-import type { HeatmapDay } from '@my-app/ui-library'
 import '@my-app/ui-library/style.css'
 
 import './App.css'
+
+import type { HeatmapDay } from '@my-app/ui-library'
 
 function generateDemoData(): HeatmapDay[] {
   const result: HeatmapDay[] = []
@@ -12,6 +13,7 @@ function generateDemoData(): HeatmapDay[] {
 
   for (let i = 111; i >= 0; i--) {
     const d = new Date(today)
+
     d.setDate(d.getDate() - i)
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -45,6 +47,7 @@ function App() {
 
     setIsCompletedToday(true)
     const newCurrent = currentStreak + 1
+
     setCurrentStreak(newCurrent)
 
     if (newCurrent > bestStreak) {
