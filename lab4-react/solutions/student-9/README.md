@@ -20,6 +20,29 @@
 - Интенсивность закраски зависит от факта выполнения
 - Данные передаются через props (`data: HeatmapDay[]`)
 
+## Структура
+
+```
+.
+├── ui-library/          # Библиотека
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── HabitCard/
+│   │   │   └── Heatmap/
+│   │   └── index.ts
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── eslint.config.js
+│   └── jest.config.ts
+├── frontend/            # Демо-приложение
+│   ├── src/
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── package.json
+│   └── ...
+└── README.md
+```
+
 ## Запуск
 
 ### Библиотека
@@ -44,6 +67,7 @@ npm run dev
 Откройте http://localhost:5173
 
 ## Скриншоты
+
 ![alt text](image/image.png)
 
 ## Технологии

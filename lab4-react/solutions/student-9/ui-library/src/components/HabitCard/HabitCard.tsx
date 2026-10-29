@@ -27,7 +27,14 @@ export const HabitCard: React.FC<HabitCardProps> = ({
 
   return (
     <article className={`${styles.card} ${className}`} data-testid="habit-card">
-      <h3 className={styles.title}>{name}</h3>
+      <div className={styles.header}>
+        <h3 className={styles.title}>{name}</h3>
+        <span
+          className={`${styles.status} ${isCompletedToday ? styles.statusDone : styles.statusWait}`}
+        >
+          {isCompletedToday ? 'Сегодня готово' : 'Ждёт отметки'}
+        </span>
+      </div>
 
       <div className={styles.stats}>
         <div className={styles.stat}>

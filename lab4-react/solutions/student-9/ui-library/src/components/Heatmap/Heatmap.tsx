@@ -15,12 +15,12 @@ export interface HeatmapProps {
 }
 
 function getColor(intensity: number): string {
-  if (intensity <= 0) return '#ebedf0'
-  if (intensity === 1) return '#9be9a8'
-  if (intensity === 2) return '#40c463'
-  if (intensity === 3) return '#30a14e'
+  if (intensity <= 0) return '#eceaf3'
+  if (intensity === 1) return '#c4b5fd'
+  if (intensity === 2) return '#a78bfa'
+  if (intensity === 3) return '#7c6bf5'
 
-  return '#216e39'
+  return '#5b45d6'
 }
 
 function parseDate(dateStr: string): Date {
@@ -106,7 +106,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
               className={styles.cell}
               style={{
                 backgroundColor: getColor(intensity),
-                borderColor: completed ? '#216e39' : '#d1d5db',
+                borderColor: completed ? '#5b45d6' : '#e6e1f2',
               }}
               role="gridcell"
               title={`${day}: ${completed ? 'выполнено' : 'не выполнено'}`}

@@ -1,266 +1,122 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo } from 'react'
 
-type Habit = {
-  id: string
-  name: string
-  best: number
-  history: Record<string, boolean>
-}
+import { HabitCard, Heatmap } from '@my-app/ui-library'
+import type { HeatmapDay } from '@my-app/ui-library'
+import '@my-app/ui-library/style.css'
 
-const STORAGE_KEY = 'habit-tracker-demo-v1'
+import './App.css'
 
-function iso(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+function generateDemoData(): HeatmapDay[] {
+  const result: HeatmapDay[] = []
+  const today = new Date()
 
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
-}
+  for (let i = 111; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const dateStr = `${y}-${m}-${day}`
+    const completed = (i * 7 + 3) % 5 !== 0
 
-function seedStreak(
-  today: Date,
-  length: number,
-  includeToday: boolean,
-): Record<string, boolean> {
-  const history: Record<string, boolean> = {}
-  const start = includeToday ? 0 : 1
-  for (let i = start; i < start + length; i += 1) {
-    history[iso(addDays(today, -i))] = true
+    result.push({ date: dateStr, completed })
   }
-  return history
+
+  return result
 }
 
-function olderDays(
-  today: Date,
-  from: number,
-  to: number,
-  pattern: (offset: number) => boolean,
-): Record<string, boolean> {
-  const history: Record<string, boolean> = {}
-  for (let i = from; i <= to; i += 1) {
-    if (pattern(i)) history[iso(addDays(today, -i))] = true
-  }
-  return history
-}
+function App() {
+  const [currentStreak, setCurrentStreak] = useState(4)
+  const [bestStreak, setBestStreak] = useState(11)
+  const [isCompletedToday, setIsCompletedToday] = useState(false)
+  const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>(generateDemoData)
 
-function initialHabits(today: Date): Habit[] {
-  return [
-    {
-      id: 'workout',
-      name: 'Утренняя зарядка',
-      best: 11,
-      history: {
-        ...olderDays(today, 6, 110, (i) => i % 3 !== 0),
-        ...seedStreak(today, 4, false),
-      },
-    },
-    {
-      id: 'reading',
-      name: 'Чтение книг',
-      best: 21,
-      history: {
-        ...olderDays(today, 13, 110, (i) => i % 4 !== 0),
-        ...seedStreak(today, 12, true),
-      },
-    },
-  ]
-}
+  const todayStr = useMemo(() => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
 
-function loadHabits(today: Date): Habit[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return initialHabits(today)
-    const parsed = JSON.parse(raw) as Habit[]
-    if (!Array.isArray(parsed) || parsed.length === 0) return initialHabits(today)
-    return parsed
-  } catch {
-    return initialHabits(today)
-  }
-}
-
-function streakEnding(history: Record<string, boolean>, end: Date): number {
-  let count = 0
-  const cursor = new Date(end)
-  if (!history[iso(cursor)]) cursor.setDate(cursor.getDate() - 1)
-  while (history[iso(cursor)]) {
-    count += 1
-    cursor.setDate(cursor.getDate() - 1)
-  }
-  return count
-}
-
-function weeksOf(today: Date, weeks: number): Date[][] {
-  const end = new Date(today)
-  const day = end.getDay()
-  const mondayOffset = day === 0 ? 6 : day - 1
-  const lastMonday = addDays(end, -mondayOffset)
-  const start = addDays(lastMonday, -(weeks - 1) * 7)
-  const columns: Date[][] = []
-  for (let w = 0; w < weeks; w += 1) {
-    const column: Date[] = []
-    for (let d = 0; d < 7; d += 1) column.push(addDays(start, w * 7 + d))
-    columns.push(column)
-  }
-  return columns
-}
-
-const HEAT_TONES = [
-  'var(--heat-0)',
-  'var(--heat-1)',
-  'var(--heat-2)',
-  'var(--heat-3)',
-  'var(--heat-4)',
-]
-
-export default function App() {
-  const today = useMemo(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    return `${y}-${m}-${day}`
   }, [])
-  const todayKey = iso(today)
-  const [habits, setHabits] = useState<Habit[]>(() => loadHabits(today))
-  const [activeId, setActiveId] = useState('workout')
-  const active = habits.find((h) => h.id === activeId) ?? habits[0]
-  const columns = useMemo(() => weeksOf(today, 16), [today])
 
-  function persist(next: Habit[]) {
-    setHabits(next)
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  }
+  const handleMarkComplete = (): void => {
+    if (isCompletedToday) return
 
-  function mark(id: string) {
-    persist(
-      habits.map((habit) => {
-        if (habit.id !== id || habit.history[todayKey]) return habit
-        const history = { ...habit.history, [todayKey]: true }
-        const current = streakEnding(history, today)
-        return { ...habit, history, best: Math.max(habit.best, current) }
-      }),
-    )
+    setIsCompletedToday(true)
+    const newCurrent = currentStreak + 1
+    setCurrentStreak(newCurrent)
+
+    if (newCurrent > bestStreak) {
+      setBestStreak(newCurrent)
+    }
+
+    setHeatmapData((prev) => {
+      const exists = prev.find((item) => item.date === todayStr)
+
+      if (exists) {
+        return prev.map((item) =>
+          item.date === todayStr ? { ...item, completed: true } : item
+        )
+      }
+
+      return [...prev, { date: todayStr, completed: true }]
+    })
   }
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="badge">HABIT</span>
-          <p className="topbar-hint">Демонстрация компонентов UI-библиотеки</p>
+      <header className="app-header">
+        <div className="header-inner">
+          <p className="header-hint">Демонстрация компонентов UI-библиотеки</p>
         </div>
       </header>
 
-      <main className="main">
+      <main className="app-main">
         <div className="hero">
           <div>
             <h1>Трекер привычек</h1>
             <p>Отметьте день или выберите карточку, чтобы увидеть её дни.</p>
           </div>
-          <span className="count-pill">Привычек: {habits.length}</span>
+          <span className="count-pill">Привычек: 2</span>
         </div>
 
-        <section className="cards">
-          {habits.map((habit) => {
-            const done = Boolean(habit.history[todayKey])
-            const current = streakEnding(habit.history, today)
-            const selected = habit.id === active.id
-            return (
-              <article
-                key={habit.id}
-                className={`card${selected ? ' selected' : ''}`}
-              >
-                <div className="card-head">
-                  <button
-                    type="button"
-                    className="card-title"
-                    onClick={() => setActiveId(habit.id)}
-                  >
-                    {habit.name}
-                  </button>
-                  <span className={`status ${done ? 'done' : 'waiting'}`}>
-                    {done ? 'Сегодня готово' : 'Ждёт отметки'}
-                  </span>
-                </div>
-                <div className="stats">
-                  <div className="stat">
-                    <p className="stat-label">Текущая серия</p>
-                    <p className="stat-value">{current}</p>
-                  </div>
-                  <div className="stat">
-                    <p className="stat-label">Лучшая серия</p>
-                    <p className="stat-value">{habit.best}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className={`mark-btn${done ? ' done' : ''}`}
-                  disabled={done}
-                  onClick={() => mark(habit.id)}
-                >
-                  {done ? 'Выполнено ✓' : 'Отметить выполненным'}
-                </button>
-              </article>
-            )
-          })}
+        <section className="section">
+          <div className="cards-grid">
+            <HabitCard
+              name="Утренняя зарядка"
+              currentStreak={currentStreak}
+              bestStreak={bestStreak}
+              isCompletedToday={isCompletedToday}
+              onMarkComplete={handleMarkComplete}
+            />
+            <HabitCard
+              name="Чтение книг"
+              currentStreak={12}
+              bestStreak={21}
+              isCompletedToday
+            />
+          </div>
         </section>
 
-        <section className="heatmap-panel">
-          <div className="heatmap-head">
+        <section className="section">
+          <div className="heatmap-panel">
             <div>
-              <p className="heatmap-kicker">Тепловая карта отметок</p>
-              <h2>{active.name}</h2>
+              <p className="section-label">Тепловая карта отметок</p>
+              <h2 className="heatmap-title">Утренняя зарядка</h2>
             </div>
-            <div className="legend">
-              <span>Меньше</span>
-              {HEAT_TONES.map((color) => (
-                <span
-                  key={color}
-                  className="legend-cell"
-                  style={{ background: color }}
-                />
-              ))}
-              <span>Больше</span>
-            </div>
-          </div>
-          <div className="heatmap-body">
-            <div className="heatmap-grid">
-              {columns.map((column) => (
-                <div key={iso(column[0])} className="heatmap-col">
-                  {column.map((day) => {
-                    const key = iso(day)
-                    const future = day > today
-                    const done = Boolean(active.history[key])
-                    const background = future
-                      ? 'transparent'
-                      : done
-                        ? 'var(--heat-3)'
-                        : 'var(--heat-0)'
-                    return (
-                      <span
-                        key={key}
-                        className="cell"
-                        title={
-                          future
-                            ? key
-                            : `${key}: ${done ? 'выполнено' : 'не выполнено'}`
-                        }
-                        style={{ background }}
-                      />
-                    )
-                  })}
-                </div>
-              ))}
+            <div className="heatmap-body">
+              <Heatmap data={heatmapData} />
             </div>
           </div>
         </section>
-
-        <footer className="footer">
-          UI Library v1.0.0 — Демонстрационное приложение
-        </footer>
       </main>
+
+      <footer className="app-footer">
+        UI Library v1.0.0 — Демонстрационное приложение
+      </footer>
     </div>
   )
 }
+
+export default App
